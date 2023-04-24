@@ -1,29 +1,36 @@
 {
-  "name": "pak-zameen-contracts",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/MuhammadHamzaSiddiqui1662/pak-zameen-contracts.git"
-  },
-  "author": {
-    "name": "Muhammad Hamza Siddiqui",
-    "email": "m.hamza1662@gmail.com"
-  },
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/MuhammadHamzaSiddiqui1662/pak-zameen-contracts/issues"
-  },
-  "homepage": "https://github.com/MuhammadHamzaSiddiqui1662/pak-zameen-contracts#readme",
-  "dependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
-    "@openzeppelin/contracts": "^4.8.3",
-    "dotenv": "^16.0.3",
-    "hardhat": "^2.14.0",
-    "tsconfig-paths": "^4.2.0"
-  }
+    "name": "pak-zameen-contracts",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "typechain": "npx hardhat typechain",
+        "compile": "npx hardhat compile",
+        "test": "npx hardhat test",
+        "run": "npx hardhat run scripts",
+        "run:sepolia": "npx hardhat run --network sepolia scripts",
+        "deploy": "npx hardhat run scripts/deploy.ts",
+        "deploy:sepolia": "npx hardhat run --network sepolia scripts/deploy.ts"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/MuhammadHamzaSiddiqui1662/pak-zameen-contracts.git"
+    },
+    "author": {
+        "name": "Muhammad Hamza Siddiqui",
+        "email": "m.hamza1662@gmail.com"
+    },
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/MuhammadHamzaSiddiqui1662/pak-zameen-contracts/issues"
+    },
+    "homepage": "https://github.com/MuhammadHamzaSiddiqui1662/pak-zameen-contracts#readme",
+    "dependencies": {
+        "@nomicfoundation/hardhat-toolbox": "^2.0.2",
+        "@openzeppelin/contracts": "^4.8.3",
+        "dotenv": "^16.0.3",
+        "hardhat": "^2.14.0",
+        "tsconfig-paths": "^4.2.0"
+    }
 }
+
