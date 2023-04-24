@@ -43,7 +43,7 @@ contract Society is ERC721 {
         plotAddressToTokenId[plotAdd] = s_tokenCounter;
         plotAddToOwner[plotAdd] = caller;
         s_tokenCounter = s_tokenCounter + 1;
-        return s_tokenCounter;
+        return s_tokenCounter - 1;
     }
 
     function getTokenCounter() public view returns (uint256) {
@@ -72,8 +72,7 @@ contract Society is ERC721 {
 
     modifier onlyPotentialPlotOwner(address caller, bytes32 plotAdd) {
         require(
-            msg.sender == plotAddressToPotentialOwner[plotAdd] ||
-                block.timestamp > (i_deplotTimestamp + 6 * 30.44 days),
+            caller == plotAddressToPotentialOwner[plotAdd] || block.timestamp > (i_deplotTimestamp + 6 * 30.44 days),
             "Not Potential Owner"
         );
         _;
