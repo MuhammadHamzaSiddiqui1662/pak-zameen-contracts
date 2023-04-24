@@ -34,6 +34,13 @@ contract Society is ERC721 {
         }
     }
 
+    function approve(address to, uint256 tokenId) public override {
+        address owner = ERC721.ownerOf(tokenId);
+        require(to != owner, "ERC721: approval to current owner");
+
+        _approve(to, tokenId);
+    }
+
     function mintNFT(
         address caller,
         bytes32 plotAdd
