@@ -17,6 +17,7 @@ describe("Registrar", function () {
         const societySymbol = "GLB";
         const potentialOwners = [
             owner.address,
+            owner.address,
             otherAccount[0].address,
             otherAccount[1].address,
             otherAccount[2].address,
@@ -26,6 +27,7 @@ describe("Registrar", function () {
             ethers.utils.formatBytes32String("A-101 Block-12 Gulberg"),
             ethers.utils.formatBytes32String("B-506 Block-12 Gulberg"),
             ethers.utils.formatBytes32String("C-26 Block-12 Gulberg"),
+            ethers.utils.formatBytes32String("ST-5 Block-12 Gulberg"),
         ];
 
         const Registrar = await ethers.getContractFactory("Registrar");
@@ -37,6 +39,9 @@ describe("Registrar", function () {
 
         const societyAddress = await registrar.societyToAddress(societyName);
 
+        const Society = await ethers.getContractFactory("Society");
+        const society = await Society.attach(societyAddress);
+
         return {
             registrar,
             societyName,
@@ -45,6 +50,7 @@ describe("Registrar", function () {
             plotAddresses,
             owner,
             otherAccount,
+            society,
             societyAddress,
             societyRecipt,
         };
@@ -58,6 +64,30 @@ describe("Registrar", function () {
             const societyAddressByContractMapping = await registrar.societyToAddress(societyName);
 
             expect(societyAddressByContractMapping).to.equal(societyAddressByEvent);
+        });
+
+        it("only potential owner can mint", async function () {
+            const { registrar, plotAddresses, potentialOwners, societyAddress, society } = await loadFixture(
+                DeployRegistrar
+            );
+            const tokenId = (await registrar.claimAsset(societyAddress, plotAddresses[0])).value;
+
+            const owner = await society.ownerOf(tokenId);
+            expect(owner == potentialOwners[0], "Only Potential Owner can mint");
+        });
+
+        it("other than potential owner can not mint", async function () {
+            const { registrar, plotAddresses, societyAddress } = await loadFixture(DeployRegistrar);
+            await expect(registrar.claimAsset(societyAddress, plotAddresses[2])).to.be.revertedWith(
+                "Not Potential Owner"
+            );
+        });
+
+        it("Token Counter increasing", async function () {
+            const { registrar, plotAddresses, societyAddress } = await loadFixture(DeployRegistrar);
+            const tokenId0 = (await registrar.claimAsset(societyAddress, plotAddresses[0])).value;
+            const tokenId1 = (await registrar.claimAsset(societyAddress, plotAddresses[1])).value;
+            expect(tokenId1.toString() == "1", "Counter is not working correctly");
         });
     });
 });
