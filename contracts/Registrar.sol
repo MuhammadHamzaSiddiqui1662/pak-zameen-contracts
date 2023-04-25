@@ -7,14 +7,16 @@ import "hardhat/console.sol";
 contract Registrar {
     // sell id
     uint256 public s_saleId;
+    uint256 public s_activeSales;
     struct Sale {
+        uint256 saleId;
         address owner;
         bytes32 plotAdd;
         uint256 tokenId;
         uint256 price;
         bool isOpen;
     }
-    mapping(uint256 => Sale) saleIdToSaleOffer;
+    mapping(uint256 => Sale) public saleIdToSaleOffer;
 
     // societies
     mapping(string => address) public societyToAddress;
@@ -25,6 +27,14 @@ contract Registrar {
 
     constructor() {
         s_saleId = 0;
+    }
+
+    function getAllSales() public view returns (Sale[] memory) {
+        Sale[] memory offers = new Sale[](s_activeSales);
+        for (uint i = 0; i < offers.length; i++) {
+            offers[i] = offers[i];
+        }
+        return offers;
     }
 
     function createSociety(
@@ -47,7 +57,15 @@ contract Registrar {
     function initiateSale(address societyAddress, bytes32 plotAdd, uint256 price) public returns (uint256 saleId) {
         Society society = Society(societyAddress);
         society.isPlotOwner(msg.sender, plotAdd);
-        saleIdToSaleOffer[s_saleId] = Sale(msg.sender, plotAdd, society.getTokenIdOfPlot(plotAdd), price, true);
+        saleIdToSaleOffer[s_saleId] = Sale(
+            s_saleId,
+            msg.sender,
+            plotAdd,
+            society.getTokenIdOfPlot(plotAdd),
+            price,
+            true
+        );
+        s_activeSales = s_activeSales + 1;
         emit SaleOffer(msg.sender, plotAdd, price);
         s_saleId = s_saleId + 1;
         return s_saleId - 1;
@@ -57,6 +75,7 @@ contract Registrar {
         require(msg.value >= saleIdToSaleOffer[saleId].price);
         Society society = Society(societyAddress);
         society.closeSaleOffer(saleIdToSaleOffer[saleId].owner, msg.sender, saleIdToSaleOffer[saleId].tokenId);
+        s_activeSales = s_activeSales - 1;
         delete saleIdToSaleOffer[saleId];
     }
 
@@ -64,6 +83,7 @@ contract Registrar {
         Society society = Society(societyAddress);
         society.isPlotOwner(msg.sender, saleIdToSaleOffer[saleId].plotAdd);
         society.closeSaleOffer(msg.sender, to, saleIdToSaleOffer[saleId].tokenId);
+        s_activeSales = s_activeSales - 1;
         delete saleIdToSaleOffer[saleId];
     }
 }
