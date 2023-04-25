@@ -10,11 +10,11 @@ contract Society is ERC721 {
     // available addresses
     bytes32[] public s_plotAddresses;
     address[] public s_potentialOwners;
-    mapping(bytes32 => address) plotAddressToPotentialOwner;
+    mapping(bytes32 => address) public plotAddressToPotentialOwner;
     // token counter
     uint256 private s_tokenCounter;
-    mapping(bytes32 => uint256) plotAddressToTokenId;
-    mapping(bytes32 => address) plotAddToOwner;
+    mapping(bytes32 => uint256) public plotAddressToTokenId;
+    mapping(bytes32 => address) public plotAddToOwner;
 
     constructor(
         string memory name,
@@ -57,8 +57,6 @@ contract Society is ERC721 {
         return s_tokenCounter;
     }
 
-    function isPlotOwner(address caller, bytes32 plotAdd) public view onlyPlotOwner(caller, plotAdd) {}
-
     function getTokenIdOfPlot(bytes32 plotAdd) public view returns (uint256) {
         return plotAddressToTokenId[plotAdd];
     }
@@ -67,13 +65,15 @@ contract Society is ERC721 {
         safeTransferFrom(owner, buyer, tokenId);
     }
 
+    function isPlotOwner(address caller, bytes32 plotAdd) public view onlyPlotOwner(caller, plotAdd) {}
+
     modifier onlyRegistrar() {
         require(msg.sender == i_registrar);
         _;
     }
 
     modifier onlyPlotOwner(address caller, bytes32 plotAdd) {
-        require(plotAddToOwner[plotAdd] == msg.sender, "Not Owner of Plot.");
+        require(plotAddToOwner[plotAdd] == caller, "Not Owner of Plot.");
         _;
     }
 
