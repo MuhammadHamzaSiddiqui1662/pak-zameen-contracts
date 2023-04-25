@@ -1,4 +1,6 @@
 import { ethers } from "hardhat";
+import { REGISTRAR_ADDRESS } from "../constants";
+import { verify } from "../utils/verify";
 
 async function main() {
     // const accounts = await ethers.getSigners();
@@ -9,7 +11,11 @@ async function main() {
 
     // await registrar.deployed();
 
-    console.log(`Scripts running...`);
+    if (process.env.ETHERSCAN_API_KEY) {
+        console.log("Verifying Contract...");
+        await verify(REGISTRAR_ADDRESS, []);
+        console.log("Verified!");
+    }
 }
 
 // We recommend this pattern to be able to use async/await everywhere
