@@ -8,7 +8,7 @@ describe("Registrar", function () {
     // We define a fixture to reuse the same setup in every test.
     // We use loadFixture to run this setup once, snapshot that state,
     // and reset Hardhat Network to that snapshot in every test.
-    async function DeployRegistrar() {
+    async function DeployRegistrarFixture() {
         // Contracts are deployed using the first signer/account by default
         const [owner, ...otherAccount] = await ethers.getSigners();
 
@@ -56,9 +56,25 @@ describe("Registrar", function () {
         };
     }
 
+    async function InitiateSaleFixture() {
+        const { registrar, plotAddresses, societyAddress, ...others } = await loadFixture(DeployRegistrarFixture);
+        const tokenId = (await registrar.claimAsset(societyAddress, plotAddresses[0])).value;
+        const saleId = (await registrar.initiateSale(societyAddress, plotAddresses[0], ethers.BigNumber.from(200)))
+            .value;
+
+        return {
+            registrar,
+            plotAddresses,
+            societyAddress,
+            tokenId,
+            saleId,
+            ...others,
+        };
+    }
+
     describe("Deployment", function () {
         it("Should create a valid scoiety", async function () {
-            const { registrar, societyName, societyRecipt } = await loadFixture(DeployRegistrar);
+            const { registrar, societyName, societyRecipt } = await loadFixture(DeployRegistrarFixture);
             const societyAddressByEvent = (await parseEventLogs(societyRecipt.transactionHash, abi))[0].args
                 .societyAddress;
             const societyAddressByContractMapping = await registrar.societyToAddress(societyName);
@@ -67,7 +83,7 @@ describe("Registrar", function () {
         });
 
         it("Token Counter increasing", async function () {
-            const { registrar, plotAddresses, societyAddress } = await loadFixture(DeployRegistrar);
+            const { registrar, plotAddresses, societyAddress } = await loadFixture(DeployRegistrarFixture);
             const tokenId0 = (await registrar.claimAsset(societyAddress, plotAddresses[0])).value;
             const tokenId1 = (await registrar.claimAsset(societyAddress, plotAddresses[1])).value;
             expect(tokenId1.toString() == "1", "Counter is not working correctly");
@@ -77,7 +93,7 @@ describe("Registrar", function () {
     describe("Mint Assets", function () {
         it("only potential owner can mint", async function () {
             const { registrar, plotAddresses, potentialOwners, societyAddress, society } = await loadFixture(
-                DeployRegistrar
+                DeployRegistrarFixture
             );
             const tokenId = (await registrar.claimAsset(societyAddress, plotAddresses[0])).value;
 
@@ -86,7 +102,7 @@ describe("Registrar", function () {
         });
 
         it("other than potential owner can not mint", async function () {
-            const { registrar, plotAddresses, societyAddress } = await loadFixture(DeployRegistrar);
+            const { registrar, plotAddresses, societyAddress } = await loadFixture(DeployRegistrarFixture);
             await expect(registrar.claimAsset(societyAddress, plotAddresses[2])).to.be.revertedWith(
                 "Not Potential Owner"
             );
@@ -95,14 +111,14 @@ describe("Registrar", function () {
 
     describe("Get Values", function () {
         it("get all sales", async function () {
-            const { registrar, plotAddresses, potentialOwners, societyAddress, society } = await loadFixture(
-                DeployRegistrar
-            );
-            const tokenId = (await registrar.claimAsset(societyAddress, plotAddresses[0])).value;
-            const b = (await registrar.initiateSale(societyAddress, plotAddresses[0], ethers.BigNumber.from(200)))
-                .value;
-            const a = await registrar.getAllSales();
-            expect(a.length > 0, "error in getting all sales");
+            const { registrar } = await loadFixture(InitiateSaleFixture);
+            const sales = await registrar.getAllSales();
+            expect(sales.length > 0, "error in getting all sales");
+        });
+        it("get sales counter", async function () {
+            const { registrar } = await loadFixture(InitiateSaleFixture);
+            const saleCounter = await registrar.s_saleCounter();
+            expect(saleCounter.toNumber() > 0, "error in getting all sales");
         });
     });
 });

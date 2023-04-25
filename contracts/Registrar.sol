@@ -6,7 +6,7 @@ import "hardhat/console.sol";
 
 contract Registrar {
     // sell id
-    uint256 public s_saleId;
+    uint256 public s_saleCounter;
     uint256 public s_activeSales;
     struct Sale {
         uint256 saleId;
@@ -26,7 +26,7 @@ contract Registrar {
     event SaleOffer(address indexed owner, bytes32 indexed plotAdd, uint256 indexed price);
 
     constructor() {
-        s_saleId = 0;
+        s_saleCounter = 0;
     }
 
     function getAllSales() public view returns (Sale[] memory) {
@@ -57,8 +57,8 @@ contract Registrar {
     function initiateSale(address societyAddress, bytes32 plotAdd, uint256 price) public returns (uint256 saleId) {
         Society society = Society(societyAddress);
         society.isPlotOwner(msg.sender, plotAdd);
-        saleIdToSaleOffer[s_saleId] = Sale(
-            s_saleId,
+        saleIdToSaleOffer[s_saleCounter] = Sale(
+            s_saleCounter,
             msg.sender,
             plotAdd,
             society.getTokenIdOfPlot(plotAdd),
@@ -67,8 +67,8 @@ contract Registrar {
         );
         s_activeSales = s_activeSales + 1;
         emit SaleOffer(msg.sender, plotAdd, price);
-        s_saleId = s_saleId + 1;
-        return s_saleId - 1;
+        s_saleCounter = s_saleCounter + 1;
+        return s_saleCounter - 1;
     }
 
     function confirmSale(address societyAddress, uint256 saleId) public payable {
