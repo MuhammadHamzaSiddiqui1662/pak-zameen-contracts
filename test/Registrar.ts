@@ -66,6 +66,15 @@ describe("Registrar", function () {
             expect(societyAddressByContractMapping).to.equal(societyAddressByEvent);
         });
 
+        it("Token Counter increasing", async function () {
+            const { registrar, plotAddresses, societyAddress } = await loadFixture(DeployRegistrar);
+            const tokenId0 = (await registrar.claimAsset(societyAddress, plotAddresses[0])).value;
+            const tokenId1 = (await registrar.claimAsset(societyAddress, plotAddresses[1])).value;
+            expect(tokenId1.toString() == "1", "Counter is not working correctly");
+        });
+    });
+
+    describe("Mint Assets", function () {
         it("only potential owner can mint", async function () {
             const { registrar, plotAddresses, potentialOwners, societyAddress, society } = await loadFixture(
                 DeployRegistrar
@@ -82,12 +91,18 @@ describe("Registrar", function () {
                 "Not Potential Owner"
             );
         });
+    });
 
-        it("Token Counter increasing", async function () {
-            const { registrar, plotAddresses, societyAddress } = await loadFixture(DeployRegistrar);
-            const tokenId0 = (await registrar.claimAsset(societyAddress, plotAddresses[0])).value;
-            const tokenId1 = (await registrar.claimAsset(societyAddress, plotAddresses[1])).value;
-            expect(tokenId1.toString() == "1", "Counter is not working correctly");
+    describe("Get Values", function () {
+        it("get all sales", async function () {
+            const { registrar, plotAddresses, potentialOwners, societyAddress, society } = await loadFixture(
+                DeployRegistrar
+            );
+            const tokenId = (await registrar.claimAsset(societyAddress, plotAddresses[0])).value;
+            const b = (await registrar.initiateSale(societyAddress, plotAddresses[0], ethers.BigNumber.from(200)))
+                .value;
+            const a = await registrar.getAllSales();
+            expect(a.length > 0, "error in getting all sales");
         });
     });
 });
