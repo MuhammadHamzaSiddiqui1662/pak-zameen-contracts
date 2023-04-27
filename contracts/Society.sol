@@ -14,7 +14,9 @@ contract Society is ERC721 {
     // token counter
     uint256 private s_tokenCounter;
     mapping(bytes32 => uint256) public plotAddressToTokenId;
-    mapping(bytes32 => address) public plotAddToOwner;
+    mapping(bytes32 => address) public plotAddressToOwner;
+    mapping(address => bytes32[]) public ownerToPotentialPlots;
+    mapping(address => bytes32[]) public ownerToOwnedPlots;
 
     constructor(
         string memory name,
@@ -26,16 +28,17 @@ contract Society is ERC721 {
 
         i_deplotTimestamp = block.timestamp;
         i_registrar = msg.sender;
-        s_tokenCounter = 0;
+        s_tokenCounter = 1;
         s_plotAddresses = plotAddresses;
         s_potentialOwners = potentialOwners;
         for (uint i = 0; i < plotAddresses.length; i++) {
             plotAddressToPotentialOwner[plotAddresses[i]] = potentialOwners[i];
+            ownerToPotentialPlots[potentialOwners[i]].push(plotAddresses[i]);
         }
     }
 
     function approve(address to, uint256 tokenId) public override {
-        address owner = ERC721.ownerOf(tokenId);
+        address owner = ownerOf(tokenId);
         require(to != owner, "ERC721: approval to current owner");
 
         _approve(to, tokenId);
@@ -43,12 +46,21 @@ contract Society is ERC721 {
 
     function mintNFT(
         address caller,
-        bytes32 plotAdd
-    ) public onlyRegistrar onlyPotentialPlotOwner(caller, plotAdd) returns (uint256) {
+        bytes32 plotAddress
+    ) public onlyRegistrar onlyPotentialPlotOwner(caller, plotAddress) returns (uint256) {
         _safeMint(caller, s_tokenCounter);
         approve(i_registrar, s_tokenCounter);
-        plotAddressToTokenId[plotAdd] = s_tokenCounter;
-        plotAddToOwner[plotAdd] = caller;
+        plotAddressToTokenId[plotAddress] = s_tokenCounter;
+        plotAddressToOwner[plotAddress] = caller;
+        ownerToOwnedPlots[caller].push(plotAddress);
+        bytes32[] memory potentialPlots = ownerToPotentialPlots[caller];
+        for (uint i = 0; i < potentialPlots.length; i++) {
+            if (plotAddress == potentialPlots[i]) {
+                potentialPlots[i] = potentialPlots[potentialPlots.length - 1];
+                ownerToPotentialPlots[caller] = potentialPlots;
+                ownerToPotentialPlots[caller].pop();
+            }
+        }
         s_tokenCounter = s_tokenCounter + 1;
         return s_tokenCounter - 1;
     }
@@ -57,29 +69,38 @@ contract Society is ERC721 {
         return s_tokenCounter;
     }
 
-    function getTokenIdOfPlot(bytes32 plotAdd) public view returns (uint256) {
-        return plotAddressToTokenId[plotAdd];
+    function getTokenIdOfPlot(bytes32 plotAddress) public view returns (uint256) {
+        return plotAddressToTokenId[plotAddress];
+    }
+
+    function getAllPotentialPlots(address owner) public view returns (bytes32[] memory) {
+        return ownerToPotentialPlots[owner];
+    }
+
+    function getAllOwnedPlots(address owner) public view returns (bytes32[] memory) {
+        return ownerToOwnedPlots[owner];
     }
 
     function closeSaleOffer(address owner, address buyer, uint256 tokenId) public onlyRegistrar {
         safeTransferFrom(owner, buyer, tokenId);
     }
 
-    function isPlotOwner(address caller, bytes32 plotAdd) public view onlyPlotOwner(caller, plotAdd) {}
+    function isPlotOwner(address caller, bytes32 plotAddress) public view onlyPlotOwner(caller, plotAddress) {}
 
     modifier onlyRegistrar() {
         require(msg.sender == i_registrar);
         _;
     }
 
-    modifier onlyPlotOwner(address caller, bytes32 plotAdd) {
-        require(plotAddToOwner[plotAdd] == caller, "Not Owner of Plot.");
+    modifier onlyPlotOwner(address caller, bytes32 plotAddress) {
+        require(plotAddressToOwner[plotAddress] == caller, "Not Owner of Plot.");
         _;
     }
 
-    modifier onlyPotentialPlotOwner(address caller, bytes32 plotAdd) {
+    modifier onlyPotentialPlotOwner(address caller, bytes32 plotAddress) {
         require(
-            caller == plotAddressToPotentialOwner[plotAdd] || block.timestamp > (i_deplotTimestamp + 6 * 30.44 days),
+            caller == plotAddressToPotentialOwner[plotAddress] ||
+                block.timestamp > (i_deplotTimestamp + 6 * 30.44 days),
             "Not Potential Owner"
         );
         _;

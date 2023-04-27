@@ -11,7 +11,7 @@ contract Registrar {
     struct Sale {
         uint256 saleId;
         address owner;
-        bytes32 plotAdd;
+        bytes32 plotAddress;
         uint256 tokenId;
         uint256 price;
         bool isOpen;
@@ -23,7 +23,7 @@ contract Registrar {
 
     // events
     event NewSocietyCreated(string societyName, string symbol, address societyAddress);
-    event SaleOffer(address indexed owner, bytes32 indexed plotAdd, uint256 indexed price);
+    event SaleOffer(address indexed owner, bytes32 indexed plotAddress, uint256 indexed price);
 
     constructor() {
         s_saleCounter = 0;
@@ -49,24 +49,24 @@ contract Registrar {
         return societyContractAddress;
     }
 
-    function claimAsset(address societyAddress, bytes32 plotAdd) public returns (uint256 tokenId) {
+    function claimAsset(address societyAddress, bytes32 plotAddress) public returns (uint256 tokenId) {
         Society society = Society(societyAddress);
-        return society.mintNFT(msg.sender, plotAdd);
+        return society.mintNFT(msg.sender, plotAddress);
     }
 
-    function initiateSale(address societyAddress, bytes32 plotAdd, uint256 price) public returns (uint256 saleId) {
+    function initiateSale(address societyAddress, bytes32 plotAddress, uint256 price) public returns (uint256 saleId) {
         Society society = Society(societyAddress);
-        society.isPlotOwner(msg.sender, plotAdd);
+        society.isPlotOwner(msg.sender, plotAddress);
         saleIdToSaleOffer[s_saleCounter] = Sale(
             s_saleCounter,
             msg.sender,
-            plotAdd,
-            society.getTokenIdOfPlot(plotAdd),
+            plotAddress,
+            society.getTokenIdOfPlot(plotAddress),
             price,
             true
         );
         s_activeSales = s_activeSales + 1;
-        emit SaleOffer(msg.sender, plotAdd, price);
+        emit SaleOffer(msg.sender, plotAddress, price);
         s_saleCounter = s_saleCounter + 1;
         return s_saleCounter - 1;
     }
@@ -76,14 +76,25 @@ contract Registrar {
         Society society = Society(societyAddress);
         society.closeSaleOffer(saleIdToSaleOffer[saleId].owner, msg.sender, saleIdToSaleOffer[saleId].tokenId);
         s_activeSales = s_activeSales - 1;
+        // payable(saleIdToSaleOffer[saleId].owner).transfer(msg.value);
         delete saleIdToSaleOffer[saleId];
     }
 
     function selfTransfer(address societyAddress, uint256 saleId, address to) public {
         Society society = Society(societyAddress);
-        society.isPlotOwner(msg.sender, saleIdToSaleOffer[saleId].plotAdd);
+        society.isPlotOwner(msg.sender, saleIdToSaleOffer[saleId].plotAddress);
         society.closeSaleOffer(msg.sender, to, saleIdToSaleOffer[saleId].tokenId);
         s_activeSales = s_activeSales - 1;
         delete saleIdToSaleOffer[saleId];
+    }
+
+    function getAllPotentialPlots(address societyAddress, address owner) public view returns (bytes32[] memory) {
+        Society society = Society(societyAddress);
+        return society.getAllPotentialPlots(owner);
+    }
+
+    function getAllOwnedPlots(address societyAddress, address owner) public view returns (bytes32[] memory) {
+        Society society = Society(societyAddress);
+        return society.getAllOwnedPlots(owner);
     }
 }
