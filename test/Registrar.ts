@@ -84,9 +84,9 @@ describe("Registrar", function () {
 
         it("Token Counter increasing", async function () {
             const { registrar, plotAddresses, societyAddress } = await loadFixture(DeployRegistrarFixture);
-            const tokenId0 = (await registrar.claimAsset(societyAddress, plotAddresses[0])).value;
-            const tokenId1 = (await registrar.claimAsset(societyAddress, plotAddresses[1])).value;
-            expect(tokenId1.toString() == "1", "Counter is not working correctly");
+            const tokenId1 = (await registrar.claimAsset(societyAddress, plotAddresses[0])).value;
+            const tokenId2 = (await registrar.claimAsset(societyAddress, plotAddresses[1])).value;
+            expect(tokenId2.toString() == "2", "Counter is not working correctly");
         });
     });
 
