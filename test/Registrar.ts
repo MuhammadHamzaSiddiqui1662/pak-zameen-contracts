@@ -96,7 +96,6 @@ describe("Registrar", function () {
                 DeployRegistrarFixture
             );
             const tokenId = (await registrar.claimAsset(societyAddress, plotAddresses[0])).value;
-
             const owner = await society.ownerOf(tokenId);
             expect(owner == potentialOwners[0], "Only Potential Owner can mint");
         });
@@ -107,9 +106,46 @@ describe("Registrar", function () {
                 "Not Potential Owner"
             );
         });
+
+        it("Token Id starts from 1", async function () {
+            const { registrar, societyAddress, plotAddresses } = await loadFixture(DeployRegistrarFixture);
+            const tokenId = (await registrar.claimAsset(societyAddress, plotAddresses[0])).value;
+            expect(tokenId == ethers.BigNumber.from(1), "error in getting tokenId of plot");
+        });
+
+        it("Un minted plots have token id '0'", async function () {
+            const { registrar, societyAddress, plotAddresses } = await loadFixture(DeployRegistrarFixture);
+            await registrar.claimAsset(societyAddress, plotAddresses[0]);
+            const tokenId = await registrar.getTokenIdOfPlot(societyAddress, plotAddresses[2]);
+            expect(tokenId == ethers.BigNumber.from(0), "error in getting tokenId of plot");
+        });
     });
 
-    describe("Get Values", function () {
+    describe("Plots", function () {
+        it("Get all potential plots", async function () {
+            const { registrar, potentialOwners, societyAddress } = await loadFixture(DeployRegistrarFixture);
+            const potentialPlots = await registrar.getAllPotentialPlots(societyAddress, potentialOwners[0]);
+        });
+
+        it("Get all owned plots", async function () {
+            const { registrar, potentialOwners, societyAddress, plotAddresses } = await loadFixture(
+                DeployRegistrarFixture
+            );
+            await registrar.claimAsset(societyAddress, plotAddresses[0]);
+            const ownedPlots = await registrar.getAllOwnedPlots(societyAddress, potentialOwners[0]);
+        });
+
+        it("Get both potential and owned plots", async function () {
+            const { registrar, potentialOwners, societyAddress, plotAddresses } = await loadFixture(
+                DeployRegistrarFixture
+            );
+            await registrar.claimAsset(societyAddress, plotAddresses[0]);
+            const potentialPlots = await registrar.getAllPotentialPlots(societyAddress, potentialOwners[0]);
+            const ownedPlots = await registrar.getAllOwnedPlots(societyAddress, potentialOwners[0]);
+        });
+    });
+
+    describe("Sales", function () {
         it("get all sales", async function () {
             const { registrar } = await loadFixture(InitiateSaleFixture);
             const sales = await registrar.getAllSales();

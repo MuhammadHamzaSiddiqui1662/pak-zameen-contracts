@@ -40,14 +40,12 @@ describe("Society", function () {
         });
         it("Token Id starts from 1", async function () {
             const { society, potentialOwners, plotAddresses } = await loadFixture(DeploySociety);
-            await society.mintNFT(potentialOwners[0], plotAddresses[0]);
-            const tokenId = await society.getTokenIdOfPlot(plotAddresses[0]);
+            const tokenId = (await society.mintNFT(potentialOwners[0], plotAddresses[0])).value;
             expect(tokenId == ethers.BigNumber.from(1), "error in getting tokenId of plot");
         });
         it("Un minted plots have token id '0'", async function () {
             const { society, potentialOwners, plotAddresses } = await loadFixture(DeploySociety);
-            await society.mintNFT(potentialOwners[0], plotAddresses[0]);
-            const tokenId = await society.getTokenIdOfPlot(plotAddresses[2]);
+            const tokenId = (await society.mintNFT(potentialOwners[0], plotAddresses[0])).value;
             expect(tokenId == ethers.BigNumber.from(0), "error in getting tokenId of plot");
         });
     });
