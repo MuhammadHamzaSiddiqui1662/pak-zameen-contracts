@@ -2,7 +2,11 @@
 pragma solidity 0.8.18;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "hardhat/console.sol";
+
+error ERC721_ApprovalToCurrentOwner();
+error Society_OnlyRegistrarCanCall();
+error Society_IncorrectDataProvided();
+error Society_NotOwnerOfPlot();
 
 contract Society is ERC721 {
     uint256 public immutable i_deplotTimestamp;
@@ -24,8 +28,7 @@ contract Society is ERC721 {
         bytes32[] memory plotAddresses,
         address[] memory potentialOwners
     ) ERC721(name, symbol) {
-        require(plotAddresses.length == potentialOwners.length, "Incorrect data provided");
-
+        if (plotAddresses.length != potentialOwners.length) revert Society_IncorrectDataProvided();
         i_deplotTimestamp = block.timestamp;
         i_registrar = msg.sender;
         s_tokenCounter = 1;
@@ -39,7 +42,7 @@ contract Society is ERC721 {
 
     function approve(address to, uint256 tokenId) public override {
         address owner = ownerOf(tokenId);
-        require(to != owner, "ERC721: approval to current owner");
+        if (to == owner) revert ERC721_ApprovalToCurrentOwner();
 
         _approve(to, tokenId);
     }
@@ -51,14 +54,16 @@ contract Society is ERC721 {
         _safeMint(caller, s_tokenCounter);
         approve(i_registrar, s_tokenCounter);
         plotAddressToTokenId[plotAddress] = s_tokenCounter;
-        plotAddressToOwner[plotAddress] = caller;
-        ownerToOwnedPlots[caller].push(plotAddress);
         bytes32[] memory potentialPlots = ownerToPotentialPlots[caller];
-        for (uint i = 0; i < potentialPlots.length; i++) {
+        for (uint256 i = 0; i < potentialPlots.length; i = i + 1) {
             if (plotAddress == potentialPlots[i]) {
-                potentialPlots[i] = potentialPlots[potentialPlots.length - 1];
-                ownerToPotentialPlots[caller] = potentialPlots;
+                if (potentialPlots.length > 1) {
+                    potentialPlots[i] = potentialPlots[potentialPlots.length - 1];
+                    ownerToPotentialPlots[caller] = potentialPlots;
+                }
                 ownerToPotentialPlots[caller].pop();
+                ownerToOwnedPlots[caller].push(plotAddress);
+                plotAddressToOwner[plotAddress] = caller;
             }
         }
         s_tokenCounter = s_tokenCounter + 1;
@@ -69,10 +74,6 @@ contract Society is ERC721 {
         return s_tokenCounter;
     }
 
-    function getTokenIdOfPlot(bytes32 plotAddress) public view returns (uint256) {
-        return plotAddressToTokenId[plotAddress];
-    }
-
     function getAllPotentialPlots(address owner) public view returns (bytes32[] memory) {
         return ownerToPotentialPlots[owner];
     }
@@ -81,19 +82,32 @@ contract Society is ERC721 {
         return ownerToOwnedPlots[owner];
     }
 
-    function closeSaleOffer(address owner, address buyer, uint256 tokenId) public onlyRegistrar {
+    function closeSaleOffer(address owner, address buyer, bytes32 plotAddress) public onlyRegistrar {
+        uint256 tokenId = plotAddressToTokenId[plotAddress];
         safeTransferFrom(owner, buyer, tokenId);
+        bytes32[] memory ownedPlots = ownerToOwnedPlots[owner];
+        for (uint256 i = 0; i < ownedPlots.length; i = i + 1) {
+            if (plotAddress == ownedPlots[i]) {
+                if (ownedPlots.length > 1) {
+                    ownedPlots[i] = ownedPlots[ownedPlots.length - 1];
+                    ownerToOwnedPlots[owner] = ownedPlots;
+                }
+                ownerToOwnedPlots[owner].pop();
+                ownerToOwnedPlots[buyer].push(plotAddress);
+                plotAddressToOwner[plotAddress] = buyer;
+            }
+        }
     }
 
     function isPlotOwner(address caller, bytes32 plotAddress) public view onlyPlotOwner(caller, plotAddress) {}
 
     modifier onlyRegistrar() {
-        require(msg.sender == i_registrar);
+        if (msg.sender != i_registrar) revert Society_OnlyRegistrarCanCall();
         _;
     }
 
     modifier onlyPlotOwner(address caller, bytes32 plotAddress) {
-        require(plotAddressToOwner[plotAddress] == caller, "Not Owner of Plot.");
+        if (plotAddressToOwner[plotAddress] != caller) revert Society_NotOwnerOfPlot();
         _;
     }
 
