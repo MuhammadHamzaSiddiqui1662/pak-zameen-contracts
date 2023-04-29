@@ -114,9 +114,9 @@ describe("Registrar", function () {
         });
 
         it("Un minted plots have token id '0'", async function () {
-            const { registrar, societyAddress, plotAddresses } = await loadFixture(DeployRegistrarFixture);
+            const { registrar, society, societyAddress, plotAddresses } = await loadFixture(DeployRegistrarFixture);
             await registrar.claimAsset(societyAddress, plotAddresses[0]);
-            const tokenId = await registrar.getTokenIdOfPlot(societyAddress, plotAddresses[2]);
+            const tokenId = await society.plotAddressToTokenId(plotAddresses[2]);
             expect(tokenId == ethers.BigNumber.from(0), "error in getting tokenId of plot");
         });
     });
