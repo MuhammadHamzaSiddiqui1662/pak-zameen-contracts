@@ -2,7 +2,6 @@
 pragma solidity 0.8.18;
 
 import "./Society.sol";
-import "hardhat/console.sol";
 
 contract Registrar {
     // sell id
@@ -14,7 +13,6 @@ contract Registrar {
         bytes32 plotAddress;
         uint256 tokenId;
         uint256 price;
-        bool isOpen;
     }
     mapping(uint256 => Sale) public saleIdToSaleOffer;
 
@@ -23,7 +21,6 @@ contract Registrar {
 
     // events
     event NewSocietyCreated(string societyName, string symbol, address societyAddress);
-    event SaleOffer(address indexed owner, bytes32 indexed plotAddress, uint256 indexed price);
 
     constructor() {
         s_saleCounter = 0;
@@ -31,8 +28,8 @@ contract Registrar {
 
     function getAllSales() public view returns (Sale[] memory) {
         Sale[] memory offers = new Sale[](s_activeSales);
-        for (uint i = 0; i < offers.length; i++) {
-            offers[i] = offers[i];
+        for (uint i = 0; i < offers.length; i = i + 1) {
+            offers[i] = saleIdToSaleOffer[i];
         }
         return offers;
     }
@@ -61,12 +58,10 @@ contract Registrar {
             s_saleCounter,
             msg.sender,
             plotAddress,
-            society.getTokenIdOfPlot(plotAddress),
-            price,
-            true
+            society.plotAddressToTokenId(plotAddress),
+            price
         );
         s_activeSales = s_activeSales + 1;
-        emit SaleOffer(msg.sender, plotAddress, price);
         s_saleCounter = s_saleCounter + 1;
         return s_saleCounter - 1;
     }
@@ -74,16 +69,16 @@ contract Registrar {
     function confirmSale(address societyAddress, uint256 saleId) public payable {
         require(msg.value >= saleIdToSaleOffer[saleId].price);
         Society society = Society(societyAddress);
-        society.closeSaleOffer(saleIdToSaleOffer[saleId].owner, msg.sender, saleIdToSaleOffer[saleId].tokenId);
+        society.closeSaleOffer(saleIdToSaleOffer[saleId].owner, msg.sender, saleIdToSaleOffer[saleId].plotAddress);
         s_activeSales = s_activeSales - 1;
-        // payable(saleIdToSaleOffer[saleId].owner).transfer(msg.value);
+        payable(saleIdToSaleOffer[saleId].owner).transfer(msg.value);
         delete saleIdToSaleOffer[saleId];
     }
 
     function selfTransfer(address societyAddress, uint256 saleId, address to) public {
         Society society = Society(societyAddress);
         society.isPlotOwner(msg.sender, saleIdToSaleOffer[saleId].plotAddress);
-        society.closeSaleOffer(msg.sender, to, saleIdToSaleOffer[saleId].tokenId);
+        society.closeSaleOffer(msg.sender, to, saleIdToSaleOffer[saleId].plotAddress);
         s_activeSales = s_activeSales - 1;
         delete saleIdToSaleOffer[saleId];
     }
